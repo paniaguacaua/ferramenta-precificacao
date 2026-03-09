@@ -11,7 +11,7 @@ st.set_page_config(
     page_title="Ferramenta de Precificação",
     page_icon="💲",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 # ─────────────────────────────────────────────
@@ -264,6 +264,65 @@ div[data-testid="stTextInput"] input::placeholder {{
     transition: opacity 0.2s !important;
 }}
 .stButton > button:hover {{ opacity: 0.88 !important; }}
+
+/* ── RESPONSIVO MOBILE ── */
+@media (max-width: 768px) {{
+
+    .block-container {{
+        padding: 0.8rem 0.8rem 2rem !important;
+    }}
+
+    .main-header {{
+        padding: 20px 18px !important;
+        border-radius: 12px !important;
+        margin-bottom: 16px !important;
+    }}
+    .main-header h1 {{ font-size: 1.3rem !important; }}
+    .main-header p  {{ font-size: 0.78rem !important; }}
+
+    .section-title {{
+        font-size: 0.65rem !important;
+        margin: 18px 0 10px !important;
+    }}
+
+    [data-testid="stMetric"] {{
+        padding: 14px 16px !important;
+        border-radius: 10px !important;
+        margin-bottom: 8px !important;
+    }}
+    [data-testid="stMetricValue"] {{ font-size: 1.2rem !important; }}
+    [data-testid="stMetric"] label {{ font-size: 0.62rem !important; }}
+
+    /* Empilha todas as colunas */
+    [data-testid="stHorizontalBlock"] {{
+        flex-direction: column !important;
+        gap: 0 !important;
+    }}
+    [data-testid="stHorizontalBlock"] > div {{
+        width: 100% !important;
+        min-width: 100% !important;
+        flex: 1 1 100% !important;
+    }}
+
+    [data-testid="stSidebar"] {{ width: 85vw !important; }}
+
+    .js-plotly-plot {{ height: 260px !important; }}
+
+    [data-testid="stDataFrame"] {{
+        overflow-x: auto !important;
+        font-size: 0.75rem !important;
+    }}
+
+    .no-data {{
+        padding: 30px 16px !important;
+        font-size: 0.82rem !important;
+    }}
+
+    .footer {{
+        font-size: 0.68rem !important;
+        margin-top: 24px !important;
+    }}
+}}
 
 /* Footer */
 .footer {{
