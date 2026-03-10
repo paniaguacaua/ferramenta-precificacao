@@ -234,20 +234,12 @@ html, body, [class*="css"] {{
     font-size: 2rem;
     font-weight: 800;
     margin: 0;
-    background: linear-gradient(90deg, {COR_TEXTO}, {COR_TEAL}, {COR_VERDE});
+    background: white;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     position: relative; z-index: 1;
     letter-spacing: -0.01em;
-}}
-.main-header p {{
-    color: var(--muted);
-    font-size: 0.92rem;
-    margin: 8px 0 0;
-    font-weight: 400;
-    position: relative; z-index: 1;
-    letter-spacing: 0.01em;
 }}
 
 /* ── SECTION TITLE ──────────────────────── */
@@ -562,7 +554,9 @@ div[data-testid="stTextInput"] input::placeholder {{
     .footer {{ font-size: 0.68rem !important; margin-top: 24px !important; }}
 }}
 
-/* ── FULLSCREEN — gráfico ocupa tela inteira sem corte ── */
+/* ── FULLSCREEN — fundo escuro + todos os SVGs e textos recoloridos ── */
+
+/* Container fullscreen */
 [data-testid="stPlotlyChart"] > div:fullscreen,
 [data-testid="stPlotlyChart"] > div:-webkit-full-screen,
 [data-testid="stPlotlyChart"] > div:-moz-full-screen {{
@@ -570,24 +564,97 @@ div[data-testid="stTextInput"] input::placeholder {{
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    padding: 24px !important;
+    padding: 32px !important;
     box-sizing: border-box !important;
     overflow: auto !important;
 }}
+
+/* Plotly plot wrapper */
 [data-testid="stPlotlyChart"] > div:fullscreen .js-plotly-plot,
 [data-testid="stPlotlyChart"] > div:-webkit-full-screen .js-plotly-plot,
 [data-testid="stPlotlyChart"] > div:-moz-full-screen .js-plotly-plot {{
     width: 100% !important;
     height: 100% !important;
-    background-color: {COR_BG} !important;
     max-width: 100vw !important;
     max-height: 100vh !important;
 }}
+
+/* Todos os SVGs — fundo escuro */
 [data-testid="stPlotlyChart"] > div:fullscreen .main-svg,
 [data-testid="stPlotlyChart"] > div:-webkit-full-screen .main-svg,
-[data-testid="stPlotlyChart"] > div:-moz-full-screen .main-svg {{
+[data-testid="stPlotlyChart"] > div:-moz-full-screen .main-svg,
+[data-testid="stPlotlyChart"] > div:fullscreen .main-svg .bg,
+[data-testid="stPlotlyChart"] > div:-webkit-full-screen .main-svg .bg,
+[data-testid="stPlotlyChart"] > div:-moz-full-screen .main-svg .bg {{
     width: 100% !important;
     height: 100% !important;
+    fill: {COR_BG} !important;
+    background-color: {COR_BG} !important;
+}}
+
+/* Textos dos eixos, ticks, labels, anotações */
+[data-testid="stPlotlyChart"] > div:fullscreen .gtitle,
+[data-testid="stPlotlyChart"] > div:fullscreen .xtick text,
+[data-testid="stPlotlyChart"] > div:fullscreen .ytick text,
+[data-testid="stPlotlyChart"] > div:fullscreen .g-axislabel text,
+[data-testid="stPlotlyChart"] > div:fullscreen .annotation-text,
+[data-testid="stPlotlyChart"] > div:fullscreen .legendtext,
+[data-testid="stPlotlyChart"] > div:fullscreen text,
+[data-testid="stPlotlyChart"] > div:-webkit-full-screen .gtitle,
+[data-testid="stPlotlyChart"] > div:-webkit-full-screen .xtick text,
+[data-testid="stPlotlyChart"] > div:-webkit-full-screen .ytick text,
+[data-testid="stPlotlyChart"] > div:-webkit-full-screen .g-axislabel text,
+[data-testid="stPlotlyChart"] > div:-webkit-full-screen .annotation-text,
+[data-testid="stPlotlyChart"] > div:-webkit-full-screen .legendtext,
+[data-testid="stPlotlyChart"] > div:-webkit-full-screen text,
+[data-testid="stPlotlyChart"] > div:-moz-full-screen .gtitle,
+[data-testid="stPlotlyChart"] > div:-moz-full-screen .xtick text,
+[data-testid="stPlotlyChart"] > div:-moz-full-screen .ytick text,
+[data-testid="stPlotlyChart"] > div:-moz-full-screen .g-axislabel text,
+[data-testid="stPlotlyChart"] > div:-moz-full-screen .annotation-text,
+[data-testid="stPlotlyChart"] > div:-moz-full-screen .legendtext,
+[data-testid="stPlotlyChart"] > div:-moz-full-screen text {{
+    fill: {COR_AXIS} !important;
+}}
+
+/* Linhas de grade */
+[data-testid="stPlotlyChart"] > div:fullscreen .gridlayer .crisp,
+[data-testid="stPlotlyChart"] > div:fullscreen .gridlayer path,
+[data-testid="stPlotlyChart"] > div:fullscreen .zerolinelayer path,
+[data-testid="stPlotlyChart"] > div:-webkit-full-screen .gridlayer .crisp,
+[data-testid="stPlotlyChart"] > div:-webkit-full-screen .gridlayer path,
+[data-testid="stPlotlyChart"] > div:-webkit-full-screen .zerolinelayer path,
+[data-testid="stPlotlyChart"] > div:-moz-full-screen .gridlayer .crisp,
+[data-testid="stPlotlyChart"] > div:-moz-full-screen .gridlayer path,
+[data-testid="stPlotlyChart"] > div:-moz-full-screen .zerolinelayer path {{
+    stroke: {COR_BORDER} !important;
+}}
+
+/* Fundo do plot area (dentro dos eixos) */
+[data-testid="stPlotlyChart"] > div:fullscreen .plot-container,
+[data-testid="stPlotlyChart"] > div:-webkit-full-screen .plot-container,
+[data-testid="stPlotlyChart"] > div:-moz-full-screen .plot-container {{
+    background-color: {COR_BG} !important;
+}}
+
+/* Modebar no fullscreen */
+[data-testid="stPlotlyChart"] > div:fullscreen .modebar,
+[data-testid="stPlotlyChart"] > div:-webkit-full-screen .modebar,
+[data-testid="stPlotlyChart"] > div:-moz-full-screen .modebar {{
+    background-color: {COR_CARD} !important;
+    border-radius: 8px !important;
+}}
+[data-testid="stPlotlyChart"] > div:fullscreen .modebar-btn path,
+[data-testid="stPlotlyChart"] > div:-webkit-full-screen .modebar-btn path,
+[data-testid="stPlotlyChart"] > div:-moz-full-screen .modebar-btn path {{
+    fill: {COR_MUTED} !important;
+}}
+
+/* Legenda no fullscreen */
+[data-testid="stPlotlyChart"] > div:fullscreen .legend,
+[data-testid="stPlotlyChart"] > div:-webkit-full-screen .legend,
+[data-testid="stPlotlyChart"] > div:-moz-full-screen .legend {{
+    fill: {COR_BG} !important;
 }}
 
 /* ── FOOTER ──────────────────────────────── */
@@ -734,13 +801,14 @@ def gerar_graficos(df: pd.DataFrame, risco_sel: list):
 
     # Configurações base — fontes e cores legíveis
     BASE_LAYOUT = dict(
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor ="rgba(0,0,0,0)",
+        paper_bgcolor=COR_BG,
+        plot_bgcolor =COR_BG,
         font=dict(
             family=f"'Sicoob Sans', 'Nunito Sans', 'DM Sans', sans-serif",
-            color=COR_AXIS,    # eixos bem legíveis
+            color=COR_AXIS,
             size=12,
         ),
+         separators=".,",
     )
     MARGIN_BAR  = dict(l=60, r=30, t=24, b=70)
     MARGIN_PIE  = dict(l=10, r=10, t=10, b=10)
@@ -964,7 +1032,7 @@ def tela_login():
             padding:38px 38px 34px;
             text-align:center;
             box-shadow:0 24px 64px rgba(0,0,0,0.55);">
-            <img src="{LOGO_B64}" style="height:110px;margin-bottom:18px;object-fit:contain;" alt="Sicoob" />
+            <img src="{LOGO_B64}" style="height:110px;margin-bottom:18px;object-fit:contain;border-radius:20px;" alt="Sicoob" />
             <div style="color:{COR_MUTED};font-size:1rem;margin-bottom:0;
                 font-family:{_PRIMARY_FONT};">
                 Ferramenta de Precificação &middot; Acesso Restrito</div>
@@ -979,27 +1047,35 @@ def tela_login():
             unsafe_allow_html=True,
         )
 
+        def _tentar_login():
+            if st.session_state.get("senha_input") == SENHA_CORRETA:
+                st.session_state["autenticado"] = True
+            else:
+                st.session_state["login_erro"] = True
+
         senha = st.text_input(
             "senha",
             type="password",
             placeholder="Digite a senha...",
             label_visibility="collapsed",
             key="senha_input",
+            on_change=_tentar_login,
         )
 
-        entrar = st.button("Entrar →", use_container_width=True, key="btn_entrar")
+        entrar = st.button("Entrar →", use_container_width=True, key="btn_entrar",
+                           on_click=_tentar_login)
 
-        if entrar:
-            if senha == SENHA_CORRETA:
-                st.session_state["autenticado"] = True
-                st.rerun()
-            else:
-                st.markdown(
-                    "<p style='color:#FF7B7B;font-size:0.82rem;"
-                    "text-align:center;margin-top:6px;font-weight:600;'>"
-                    "❌ Senha incorreta. Tente novamente.</p>",
-                    unsafe_allow_html=True,
-                )
+        if st.session_state.get("autenticado"):
+            st.rerun()
+
+        if st.session_state.get("login_erro") and not st.session_state.get("autenticado"):
+            st.markdown(
+                "<p style='color:#FF7B7B;font-size:0.82rem;"
+                "text-align:center;margin-top:6px;font-weight:600;'>"
+                "❌ Senha incorreta. Tente novamente.</p>",
+                unsafe_allow_html=True,
+            )
+            st.session_state["login_erro"] = False
 
 
 def main():
