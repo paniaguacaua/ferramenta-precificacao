@@ -241,6 +241,14 @@ html, body, [class*="css"] {{
     position: relative; z-index: 1;
     letter-spacing: -0.01em;
 }}
+.main-header p {{
+    color: var(--muted);
+    font-size: 0.92rem;
+    margin: 8px 0 0;
+    font-weight: 400;
+    position: relative; z-index: 1;
+    letter-spacing: 0.01em;
+}}
 
 /* ── SECTION TITLE ──────────────────────── */
 .section-title {{
@@ -317,28 +325,6 @@ html, body, [class*="css"] {{
     overflow: hidden;
     border: 1px solid var(--border);
 }}
-/* Cabeçalho da tabela */
-[data-testid="stDataFrame"] th,
-[data-testid="stDataFrame"] .col_heading {{
-    background-color: {COR_ESCURO} !important;
-    color: {COR_TEXTO} !important;
-    font-size: 0.78rem !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.06em !important;
-    text-transform: uppercase !important;
-    padding: 12px 14px !important;
-    font-family: var(--font) !important;
-}}
-/* Células da tabela */
-[data-testid="stDataFrame"] td,
-[data-testid="stDataFrame"] .data {{
-    background-color: {COR_CARD} !important;
-    color: {COR_TEXTO} !important;
-    font-size: 0.86rem !important;
-    font-weight: 400 !important;
-    padding: 10px 14px !important;
-    font-family: var(--font) !important;
-}}
 [data-testid="stDataFrame"] tr:hover td {{
     background-color: #005570 !important;
 }}
@@ -368,7 +354,7 @@ html, body, [class*="css"] {{
 .sb-divider {{ height: 1px; background: var(--border); margin: 14px 0; }}
 .sb-logo {{
     font-family: var(--heading) !important;
-    font-size: 1.15rem; font-weight: 800;
+    font-size: 1.5rem; font-weight: 800;
     color: {COR_TEAL}; padding-bottom: 2px; letter-spacing: 0.02em;
 }}
 .sb-sub {{ font-size: 0.73rem; color: var(--muted); margin-bottom: 14px; }}
@@ -670,84 +656,74 @@ div[data-testid="stTextInput"] input::placeholder {{
 
 
 # ─────────────────────────────────────────────
-# HIERARQUIA CENTRAL → COOPERATIVA
+# CONSTANTES / DICIONÁRIOS
 # ─────────────────────────────────────────────
-HIERARQUIA = {
-    "Central Norte":   ["Cooperativa Amazônia", "Cooperativa Pará", "Cooperativa Tocantins"],
-    "Central Sul":     ["Cooperativa Gaúcha", "Cooperativa Catarinense", "Cooperativa Paranaense"],
-    "Central Leste":   ["Cooperativa Mineira", "Cooperativa Capixaba", "Cooperativa Fluminense"],
-    "Central Oeste":   ["Cooperativa Goiana", "Cooperativa Mato-Grossense", "Cooperativa Sulmatense"],
-    "Central Sudeste": ["Cooperativa Paulista", "Cooperativa ABC", "Cooperativa Vale"],
-}
 
-SUBMODALIDADES = [
-    "Capital de Giro", "Investimento", "Giro Rápido",
-    "Crédito Estruturado", "Agronegócio", "Crédito Imobiliário",
-    "Microcrédito", "Financiamento de Equipamentos",
-]
-RISCOS      = [f"R{i}" for i in range(1, 21)]
-INDEXADORES = ["CDI", "IPCA", "Prefixado", "TJLP", "SELIC"]
-
-
-# ─────────────────────────────────────────────
-# FUNÇÕES
-# ─────────────────────────────────────────────
+# O arquivo Excel deve ser salvo na mesma pasta deste arquivo app.py, com o nome 'dados.xlsx'.
+ARQUIVO_DADOS = "dados.xlsx"
 
 @st.cache_data
 def carregar_dados() -> pd.DataFrame:
-    """Gera base de dados simulada de contratos."""
-    random.seed(42)
-    np.random.seed(42)
+    """Carrega base de dados de um arquivo Excel (dados.xlsx) e mapeia as colunas."""
+    try:
+        # Tenta ler o arquivo Excel. É necessário ter a biblioteca 'openpyxl' instalada. 
+        # Comando: pip install openpyxl
+        df_raw = pd.read_excel(ARQUIVO_DADOS)
+    except FileNotFoundError:
+        st.error(f"Arquivo '{ARQUIVO_DADOS}' não encontrado. Por favor, coloque o arquivo Excel na mesma pasta do script.")
+        # Retorna um DataFrame vazio com as colunas esperadas para o app não quebrar
+        return pd.DataFrame(columns=[
+            "central", "cooperativa", "PA", "modalidade", "submodalidade", 
+            "risco", "tipo_pessoa", "fab_limite", "valor_contrato", "prazo_meses", 
+            "indexador", "taxa_juros", "seg_prestamista", "data_contrato", "ano_mes", "risco_num"
+        ])
 
-    todas_coop = [
-        (central, coop)
-        for central, coops in HIERARQUIA.items()
-        for coop in coops
-    ]
+    df = pd.DataFrame()
 
-    n = 300
-    datas = pd.date_range("2023-01-01", "2025-03-01", periods=n)
-    registros = []
+    # Mapeamentos diretos
+    df["data_contrato"]   = pd.to_datetime(df_raw["Data Movimento Entrada"], dayfirst=True, errors="coerce")
+    df["ano_mes"]         = df["data_contrato"].dt.to_period("M").astype(str)
+    
+    # Tratando as colunas de texto/categóricas
+    df["central"]         = df_raw["Número Central"].astype(str)
+    df["cooperativa"]     = df_raw["Número Cooperativa"].astype(str)
+    df["PA"]              = df_raw["Número PA"].astype(str)
+    
+    df["modalidade"]      = df_raw["Modalidade Bacen"].astype(str).replace({
+        "EMPRESTIMOS": "Empréstimos",
+        "FINANCIAMENTOS": "Financiamentos",
+    }, regex=False)
+    
+    df["submodalidade"]   = df_raw["Submodalidade Bacen"].astype(str).replace({
+        "AQUISIÇÃO DE BENS – VEÍCULOS AUTOMOTORES": "Financiamento de Veículos",
+        "AQUISIÇÃO DE BENS – OUTROS BENS": "Aquisição de Bens - Outros Bens",
+        "CAPITAL DE GIRO COM PRAZO DE VENCIMENTO ATÉ 365 DIAS": "Capital de Giro até 365 dias",
+        "CAPITAL DE GIRO COM PRAZO VENCIMENTO SUPERIOR 365 DIAS": "Capital de Giro superior 365 dias",
+        "CRÉDITO PESSOAL - SEM CONSIGNAÇÃO EM FOLHA DE PAGAM.": "Crédito Pessoal",
+        "CRÉDITO PESSOAL - COM CONSIGNAÇÃO EM FOLHA DE PAGAM.": "Crédito Consignado",
+    }, regex=False)
+    
+    df["risco"]           = df_raw["Descrição Nivel Risco Limite"].astype(str).str.upper()
+    df["tipo_pessoa"]     = df_raw["Sigla Tipo Pessoa"].astype(str).str.upper()
+    df["fab_limite"]      = df_raw["Indicador Fábrica Limite"].astype(str).str.upper().str.strip()
+    
+    df["indexador"]       = df_raw["Índice Correção"].astype(str).replace({
+        "NAO INFORMADO": "PREFIXADO",
+        "CERTIFICADO DEPÓSITO INTERBANCÁRIO": "CDI",
+        "TAXA SELIC": "SELIC",
+    }, regex=False)
+    
+    df["seg_prestamista"] = df_raw["Possui Seguro Prestamista"].astype(str).str.upper().str.strip()
 
-    for i in range(n):
-        central, coop = random.choice(todas_coop)
-        tipo_pessoa = random.choice(["PF", "PJ"])
-        submod      = random.choice(SUBMODALIDADES)
-        risco       = random.choice(RISCOS)
-        fab_limite  = random.choice(["Sim", "Não"])
-        indexador   = random.choice(INDEXADORES)
+    # Extrai o valor numérico do risco (ex: tira o "R" do "R12") para ordenação
+    df["risco_num"]       = df["risco"].str.extract(r'(\d+)').astype(float)
+    df["risco_num"]       = df["risco_num"].fillna(0).astype(int)
 
-        if tipo_pessoa == "PF":
-            valor = round(np.random.uniform(10_000,  300_000),  2)
-            taxa  = round(np.random.uniform(8, 18),             2)
-        else:
-            valor = round(np.random.uniform(100_000, 5_000_000), 2)
-            taxa  = round(np.random.uniform(6, 15),              2)
+    # Convertendo números financeiros
+    df["valor_contrato"]  = pd.to_numeric(df_raw["Valor Contrato"], errors="coerce").fillna(0.0)
+    df["prazo_meses"]     = pd.to_numeric(df_raw["Quantidade de Parcelas"], errors="coerce").fillna(0).astype(int)
+    df["taxa_juros"]      = pd.to_numeric(df_raw["% Taxa Operação"], errors="coerce").fillna(0.0)
 
-        prazo = random.choice([12, 24, 36, 48, 60, 84, 120])
-
-        seg_prestamista = random.choice(["Sim", "Sim", "Não"])
-        registros.append({
-            "proposta":          f"PRO-{2023 + i // 150}-{str(i+1).zfill(4)}",
-            "central":           central,
-            "cooperativa":       coop,
-            "cliente":           f"Cliente {i+1:04d}",
-            "tipo_pessoa":       tipo_pessoa,
-            "submodalidade":     submod,
-            "risco":             risco,
-            "fab_limite":        fab_limite,
-            "seg_prestamista":   seg_prestamista,
-            "indexador":         indexador,
-            "valor_contrato":    valor,
-            "taxa_juros":        taxa,
-            "prazo_meses":       prazo,
-            "data_contrato":     datas[i],
-            "status":            random.choice(["Ativo","Ativo","Ativo","Em Análise","Encerrado"]),
-        })
-
-    df = pd.DataFrame(registros)
-    df["ano_mes"]  = df["data_contrato"].dt.to_period("M").astype(str)
-    df["risco_num"]= df["risco"].str.replace("R","").astype(int)
     return df
 
 
@@ -756,10 +732,12 @@ def aplicar_filtros(
     central: str,
     cooperativa: str,
     ano_mes_sel: list,
+    mod_sel: list,
     submod_sel: list,
     fab_limite_sel: list,
     tipo_pessoa_sel: list,
     seg_prestamista_sel: list,
+    fixado_sel: list,
 ) -> pd.DataFrame:
     """Aplica todos os filtros ao DataFrame."""
     dff = df.copy()
@@ -769,6 +747,8 @@ def aplicar_filtros(
         dff = dff[dff["cooperativa"] == cooperativa]
     if ano_mes_sel:
         dff = dff[dff["ano_mes"].isin(ano_mes_sel)]
+    if mod_sel:
+        dff = dff[dff["modalidade"].isin(mod_sel)]
     if submod_sel:
         dff = dff[dff["submodalidade"].isin(submod_sel)]
     if fab_limite_sel:
@@ -777,6 +757,8 @@ def aplicar_filtros(
         dff = dff[dff["seg_prestamista"].isin(seg_prestamista_sel)]
     if tipo_pessoa_sel:
         dff = dff[dff["tipo_pessoa"].isin(tipo_pessoa_sel)]
+    if fixado_sel:
+        dff = dff[dff["indexador"].isin(fixado_sel)]
     return dff
 
 
@@ -808,7 +790,7 @@ def gerar_graficos(df: pd.DataFrame, risco_sel: list):
             color=COR_AXIS,
             size=12,
         ),
-         separators=".,",
+        separators=".,",   # ponto como separador de milhar, vírgula como decimal
     )
     MARGIN_BAR  = dict(l=60, r=30, t=24, b=70)
     MARGIN_PIE  = dict(l=10, r=10, t=10, b=10)
@@ -832,7 +814,11 @@ def gerar_graficos(df: pd.DataFrame, risco_sel: list):
                 showscale=False,
                 line=dict(color="rgba(0,0,0,0)", width=0),
             ),
-            hovertemplate="<b>%{x}</b><br><span style='color:#00AE9D'>R$ %{y:,.0f}</span><extra></extra>",
+            customdata=df_mes['valor_contrato'].apply(lambda v: fmt_abrev(v)),
+            text=df_mes['valor_contrato'].apply(lambda v: fmt_abrev(v)),
+            textposition='auto',
+            textfont=dict(color='white'),
+            hovertemplate="<b>%{x}</b><br><span style='color:#00AE9D'>R$ %{customdata}</span><extra></extra>",
         ))
         fig_mes.update_layout(
             **BASE_LAYOUT,
@@ -848,7 +834,8 @@ def gerar_graficos(df: pd.DataFrame, risco_sel: list):
             yaxis=dict(
                 gridcolor=COR_BORDER,
                 gridwidth=0.5,
-                tickformat=",.0f",
+                tickvals=gerar_tickvals(df_mes["valor_contrato"])[0],
+                ticktext=gerar_tickvals(df_mes["valor_contrato"])[1],
                 title=dict(text="R$", font=dict(color=COR_LABEL, size=12)),
                 tickfont=dict(size=12, color=COR_AXIS),
                 linecolor=COR_BORDER,
@@ -916,7 +903,11 @@ def gerar_graficos(df: pd.DataFrame, risco_sel: list):
             marker_color=cores,
             marker_line=dict(color="rgba(0,0,0,0)", width=0),
             showlegend=False,
-            hovertemplate="<b>%{x}</b><br><span style='color:#00AE9D'>R$ %{y:,.0f}</span><extra></extra>",
+            customdata=df_risco['valor_contrato'].apply(lambda v: fmt_abrev(v)),
+            text=df_risco['valor_contrato'].apply(lambda v: fmt_abrev(v)),
+            textposition='auto',
+            textfont=dict(color='white'),
+            hovertemplate="<b>%{x}</b><br><span style='color:#00AE9D'>R$ %{customdata}</span><extra></extra>",
         ))
 
         fig_risco.update_layout(
@@ -932,7 +923,8 @@ def gerar_graficos(df: pd.DataFrame, risco_sel: list):
             yaxis=dict(
                 gridcolor=COR_BORDER,
                 gridwidth=0.5,
-                tickformat=",.0f",
+                tickvals=gerar_tickvals(df_risco["valor_contrato"])[0],
+                ticktext=gerar_tickvals(df_risco["valor_contrato"])[1],
                 title=dict(text="R$", font=dict(color=COR_LABEL, size=12)),
                 tickfont=dict(size=12, color=COR_AXIS),
                 linecolor=COR_BORDER,
@@ -951,7 +943,7 @@ def gerar_graficos(df: pd.DataFrame, risco_sel: list):
         df_seg = df.groupby("seg_prestamista")["valor_contrato"].sum().reset_index()
         COR_SIM = COR_TEAL
         COR_NAO = "#E05C5C"
-        cores_seg = [COR_SIM if v == "Sim" else COR_NAO for v in df_seg["seg_prestamista"]]
+        cores_seg = [COR_SIM if str(v).upper().strip() == "SIM" else COR_NAO for v in df_seg["seg_prestamista"]]
         fig_seg = go.Figure(go.Pie(
             labels=df_seg["seg_prestamista"],
             values=df_seg["valor_contrato"],
@@ -984,19 +976,131 @@ def gerar_graficos(df: pd.DataFrame, risco_sel: list):
         fig_seg = go.Figure()
         fig_seg.update_layout(**BASE_LAYOUT, height=340)
 
-    return fig_mes, fig_tp, fig_risco, fig_seg
+    # ── Pré e Pós Fixado ──────────────────────────────────────────────
+    if not df.empty and "indexador" in df.columns:
+        df_ind = df.groupby("indexador")["valor_contrato"].sum().reset_index()
+        cores_ind = [COR_TEAL, COR_VERDE, COR_ROXO, COR_MUTED, COR_BORDER]
+        fig_indexador = go.Figure(go.Pie(
+            labels=df_ind["indexador"],
+            values=df_ind["valor_contrato"],
+            hole=0.50,
+            marker=dict(
+                colors=cores_ind,
+                line=dict(color=COR_BG, width=3),
+            ),
+            textinfo="percent",
+            textfont=dict(size=13, color="#FFFFFF", family="'Sicoob Sans','Nunito Sans',sans-serif"),
+            textposition="inside",
+            automargin=False,
+            hovertemplate="<b>%{label}</b><br>R$ %{value:,.0f}<br>%{percent}<extra></extra>",
+        ))
+        fig_indexador.update_layout(
+            **BASE_LAYOUT,
+            margin=dict(l=20, r=20, t=20, b=60),
+            legend=dict(
+                bgcolor="rgba(0,0,0,0)",
+                orientation="h",
+                x=0.5, xanchor="center",
+                y=-0.12, yanchor="top",
+                font=dict(color=COR_TEXTO, size=13,
+                          family="'Sicoob Sans','Nunito Sans',sans-serif"),
+            ),
+            height=340,
+        )
+    else:
+        fig_indexador = go.Figure()
+        fig_indexador.update_layout(**BASE_LAYOUT, height=340)
+
+    # ── Cooperativas Operando ─────────────────────────────────────────
+    if not df.empty:
+        df_coop = df.groupby("central")["cooperativa"].nunique().reset_index(name="qtd_coop")
+        df_coop = df_coop.sort_values("qtd_coop", ascending=False)
+        df_coop.columns = ["Central", "Qtd Cooperativas"]
+    else:
+        df_coop = pd.DataFrame(columns=["Central", "Qtd Cooperativas"])
+
+    return fig_mes, fig_tp, fig_risco, fig_seg, df_coop, fig_indexador
 
 
 # ── Formatação ───────────────────────────────
+def _fmt_eixo(v: float) -> str:
+    """Formata valor para exibição nos eixos: K, Mi, Bi."""
+    av = abs(v)
+    if av >= 1_000_000_000:
+        return f"{v/1_000_000_000:.2f} Bi".replace(".", ",")
+    if av >= 1_000_000:
+        return f"{v/1_000_000:.2f} Mi".replace(".", ",")
+    if av >= 1_000:
+        return f"{v/1_000:.2f} K".replace(".", ",")
+    return f"{v:.0f}"
+
+
+def _tickvals_labels(series: "pd.Series"):
+    """Gera tickvals e ticktext abreviados para um eixo Y."""
+    import numpy as np
+    vmax = series.max()
+    vmin = 0
+    ticks = np.linspace(vmin, vmax, 6)
+    tickvals = [float(t) for t in ticks]
+    ticktext = [_fmt_eixo(t) for t in ticks]
+    return tickvals, ticktext
+
+
 def fmt_moeda(v: float) -> str:
+    if v >= 1_000_000_000:
+        return f"R$ {v/1_000_000_000:.2f} B".replace(".", ",")
     if v >= 1_000_000:
-        return f"R$ {v/1_000_000:.2f}M"
+        return f"R$ {v/1_000_000:.2f} M".replace(".", ",")
     if v >= 1_000:
-        return f"R$ {v/1_000:.1f}K"
-    return f"R$ {v:.2f}"
+        return f"R$ {v/1_000:.1f} K".replace(".", ",")
+    return f"R$ {v:.2f}".replace(".", ",")
 
 def fmt_moeda_full(v: float) -> str:
     return f"R$ {v:,.2f}".replace(",","X").replace(".",",").replace("X",".")
+
+
+def fmt_abrev(v: float) -> str:
+    """Formata valor abreviado: K, Mi, Bi."""
+    if abs(v) >= 1_000_000_000:
+        return f"{v/1_000_000_000:.2f} Bi"
+    if abs(v) >= 1_000_000:
+        return f"{v/1_000_000:.2f} Mi"
+    if abs(v) >= 1_000:
+        return f"{v/1_000:.2f} K"
+    return f"{v:.0f}"
+
+
+def gerar_tickvals_abrev(max_val: float, n_ticks: int = 6):
+    """Gera tickvals e ticktext abreviados para o eixo Y."""
+    import math
+    if max_val <= 0:
+        return [], []
+    step_raw = max_val / n_ticks
+    magnitude = 10 ** math.floor(math.log10(step_raw))
+    step = round(step_raw / magnitude) * magnitude
+    if step == 0:
+        step = magnitude
+    tickvals = [i * step for i in range(n_ticks + 2) if i * step <= max_val * 1.15]
+    ticktext = [fmt_abrev(v) for v in tickvals]
+    return tickvals, ticktext
+
+def fmt_abrev(v: float) -> str:
+    """Formata valor abreviado para eixos de gráficos."""
+    if abs(v) >= 1_000_000_000:
+        return f"{v/1_000_000_000:.2f} Bi".replace(".", ",")
+    if abs(v) >= 1_000_000:
+        return f"{v/1_000_000:.2f} Mi".replace(".", ",")
+    if abs(v) >= 1_000:
+        return f"{v/1_000:.2f} K".replace(".", ",")
+    return f"{v:.0f}"
+
+def gerar_tickvals(series: "pd.Series", n_ticks: int = 6):
+    """Gera tickvals e ticktext abreviados para um eixo Y."""
+    max_v = series.max() if not series.empty else 1
+    import numpy as np
+    vals = np.linspace(0, max_v * 1.05, n_ticks)
+    texts = [fmt_abrev(v) for v in vals]
+    return list(vals), texts
 
 
 # ─────────────────────────────────────────────
@@ -1026,14 +1130,14 @@ def tela_login():
     with col:
         st.markdown(f"""
         <div style="
-            background:{COR_CARD};
+            background:#FFFFFF;
             border:1px solid {COR_BORDER};
             border-radius:20px;
             padding:38px 38px 34px;
             text-align:center;
             box-shadow:0 24px 64px rgba(0,0,0,0.55);">
             <img src="{LOGO_B64}" style="height:110px;margin-bottom:18px;object-fit:contain;border-radius:20px;" alt="Sicoob" />
-            <div style="color:{COR_MUTED};font-size:1rem;margin-bottom:0;
+            <div style="color:{COR_ESCURO};font-size:1rem;margin-bottom:0;
                 font-family:{_PRIMARY_FONT};">
                 Ferramenta de Precificação &middot; Acesso Restrito</div>
         </div>
@@ -1094,7 +1198,6 @@ def main():
     with st.sidebar:
         st.markdown(f"""
         <div class="sb-logo">🔎 Filtros</div>
-        <div class="sb-sub">Ferramenta de Precificação</div>
         <div class="sb-divider"></div>
         """, unsafe_allow_html=True)
 
@@ -1102,7 +1205,7 @@ def main():
                     f"letter-spacing:0.06em;text-transform:uppercase;margin:0 0 8px;'>"
                     f"🏦 Central / Cooperativa</p>", unsafe_allow_html=True)
 
-        centrais    = ["Todas"] + sorted(HIERARQUIA.keys())
+        centrais    = ["Todas"] + sorted(df["central"].unique().tolist())
         st.markdown(f"<p style='color:{COR_MUTED};font-size:0.72rem;font-weight:600;"
                     f"letter-spacing:0.04em;margin:0 0 4px;'>Central</p>",
                     unsafe_allow_html=True)
@@ -1110,9 +1213,9 @@ def main():
                                    label_visibility="collapsed", key="central")
 
         if central_sel == "Todas":
-            coops = ["Todas"] + sorted(c for lst in HIERARQUIA.values() for c in lst)
+            coops = ["Todas"] + sorted(df["cooperativa"].unique().tolist())
         else:
-            coops = ["Todas"] + sorted(HIERARQUIA[central_sel])
+            coops = ["Todas"] + sorted(df[df["central"] == central_sel]["cooperativa"].unique().tolist())
 
         st.markdown(f"<p style='color:{COR_MUTED};font-size:0.72rem;font-weight:600;"
                     f"letter-spacing:0.04em;margin:6px 0 4px;'>Cooperativa</p>",
@@ -1127,10 +1230,19 @@ def main():
                     f"🔎 Filtros Adicionais</p>", unsafe_allow_html=True)
 
         ano_mes_opts = sorted(df["ano_mes"].unique().tolist())
-        ano_mes_sel  = st.multiselect("📅 Ano-Mês", ano_mes_opts,
+        ano_mes_sel  = st.multiselect("📅 Mês-Ano", ano_mes_opts,
+                                      format_func=lambda x: f"{x[5:7]}/{x[0:4]}",
                                       placeholder="Todos os períodos")
 
-        submod_opts = sorted(df["submodalidade"].unique().tolist())
+        mod_opts = sorted(df["modalidade"].unique().tolist())
+        mod_sel  = st.multiselect("📋 Modalidade", mod_opts,
+                                     placeholder="Todas")
+
+        if mod_sel:
+            submod_opts = sorted(df[df["modalidade"].isin(mod_sel)]["submodalidade"].unique().tolist())
+        else:
+            submod_opts = sorted(df["submodalidade"].unique().tolist())
+
         submod_sel  = st.multiselect("📂 Submodalidade", submod_opts,
                                      placeholder="Todas")
 
@@ -1143,17 +1255,23 @@ def main():
         tp_sel  = st.multiselect("👤 Tipo de Pessoa", ["PF","PJ"],
                                  placeholder="PF / PJ")
 
+        fixado_opts = sorted(df["indexador"].unique().tolist())
+        fixado_sel = st.multiselect("Pré e Pós Fixado", fixado_opts,
+                                 placeholder="Todos")
+
         st.markdown('<div class="sb-divider"></div>', unsafe_allow_html=True)
 
         st.markdown(f"<p style='color:{COR_LABEL};font-size:0.78rem;font-weight:700;"
                     f"letter-spacing:0.06em;text-transform:uppercase;margin:0 0 8px;'>"
                     f"⚠️ Risco (Gráfico)</p>", unsafe_allow_html=True)
 
-        risco_sel = st.multiselect("Nível de Risco", RISCOS, default=RISCOS,
+        riscos_opts = sorted(df["risco"].unique().tolist(), key=lambda r: int(str(r).replace('R', '')) if str(r).replace('R', '').isdigit() else 0)
+
+        risco_sel = st.multiselect("Nível de Risco", riscos_opts, default=riscos_opts,
                                    label_visibility="collapsed")
 
         st.markdown('<div class="sb-divider"></div>', unsafe_allow_html=True)
-        st.caption(f"📦 Base: {len(df):,} contratos carregados")
+        st.caption(f"📦 Base: {f'{len(df):,}'.replace(',', '.')} contratos carregados")
 
     # ════════════════════════════════════════
     # CONTEÚDO PRINCIPAL
@@ -1175,10 +1293,12 @@ def main():
         central             =central_sel,
         cooperativa         =coop_sel,
         ano_mes_sel         =ano_mes_sel,
+        mod_sel             =mod_sel,
         submod_sel          =submod_sel,
         fab_limite_sel      =fab_sel,
         tipo_pessoa_sel     =tp_sel,
         seg_prestamista_sel =seg_sel,
+        fixado_sel          =fixado_sel,
     )
 
     metricas = gerar_metricas(df_filtrado)
@@ -1191,6 +1311,8 @@ def main():
         tags.append(f"Coop: <strong>{coop_sel}</strong>")
     if ano_mes_sel:
         tags.append(f"Período: <strong>{len(ano_mes_sel)} meses</strong>")
+    if mod_sel:
+        tags.append(f"Mod: <strong>{len(mod_sel)} selecionadas</strong>")
     if submod_sel:
         tags.append(f"Submod: <strong>{len(submod_sel)} selecionadas</strong>")
     if fab_sel:
@@ -1199,6 +1321,8 @@ def main():
         tags.append(f"Seg. Prestamista: <strong>{', '.join(seg_sel)}</strong>")
     if tp_sel:
         tags.append(f"Pessoa: <strong>{', '.join(tp_sel)}</strong>")
+    if fixado_sel:
+        tags.append(f"Pré/Pós Fixado: <strong>{', '.join(fixado_sel)}</strong>")
     if tags:
         st.markdown(
             f"<div class='filtros-ativos'>🔍 Filtros ativos: &nbsp;"
@@ -1216,20 +1340,21 @@ def main():
     total = (pf + pj) or 1
 
     with c1:
+        total_contratos_fmt = f"{metricas['total_contratos']:,}".replace(",", ".")
         st.metric(
             label="Valor Total Contratado",
             value=fmt_moeda(metricas["valor_total"]),
-            delta=f"{metricas['total_contratos']:,} contratos",
+            delta=f"{total_contratos_fmt} contratos",
         )
     with c2:
         st.metric(
-            label="Taxa Média (% a.a.)",
+            label="Taxa Média (% a.m.)",
             value=f"{metricas['taxa_media']:.2f}%",
             delta="Taxa média da carteira",
         )
     with c3:
         st.metric(
-            label="Prazo Médio",
+            label="Prazo Médio de Parcelas",
             value=f"{metricas['prazo_medio']:.0f} meses",
             delta=f"≈ {metricas['prazo_medio']/12:.1f} anos",
         )
@@ -1249,7 +1374,7 @@ def main():
         </div>
         """, unsafe_allow_html=True)
     else:
-        fig_mes, fig_tp, fig_risco, fig_seg = gerar_graficos(df_filtrado, risco_sel)
+        fig_mes, fig_tp, fig_risco, fig_seg, df_coop, fig_indexador = gerar_graficos(df_filtrado, risco_sel)
 
         PLOTLY_CFG = dict(
             modeBarButtonsToRemove=[
@@ -1272,58 +1397,48 @@ def main():
         )
         st.plotly_chart(fig_mes, use_container_width=True, config=PLOTLY_CFG)
 
-        # ── Tipo de Pessoa + Seguro Prestamista ──
-        col_g1, col_g2 = st.columns(2)
+        # ── Tipo de Pessoa + Seguro Prestamista + Pré/Pós Fixado ──
+        col_g1, col_g2, col_g3 = st.columns(3)
         with col_g1:
             st.markdown(
-                '<p class="chart-title">👤 Tipo de Pessoa — Valor Contratado</p>',
+                '<p class="chart-title">👤 Tipo de Pessoa</p>',
                 unsafe_allow_html=True,
             )
             st.plotly_chart(fig_tp, use_container_width=True, config=PLOTLY_CFG)
         with col_g2:
             st.markdown(
-                '<p class="chart-title">🛡️ Seguro Prestamista — Valor Contratado</p>',
+                '<p class="chart-title">🛡️ Seguro Prestamista</p>',
                 unsafe_allow_html=True,
             )
             st.plotly_chart(fig_seg, use_container_width=True, config=PLOTLY_CFG)
+        with col_g3:
+            st.markdown(
+                '<p class="chart-title">📈 Pré e Pós Fixado</p>',
+                unsafe_allow_html=True,
+            )
+            st.plotly_chart(fig_indexador, use_container_width=True, config=PLOTLY_CFG)
 
-        # ── Risco ────────────────────────────
-        st.markdown('<div class="section-title">⚠️ Exposição por Nível de Risco</div>',
+        # ── Risco e Cooperativas ────────────────────────────
+        st.markdown('<div class="section-title">⚠️ Exposição por Risco e Volume Operacional</div>',
                     unsafe_allow_html=True)
+                    
         st.markdown(
             '<p class="chart-title">⚠️ Risco × Valor Contratado</p>',
             unsafe_allow_html=True,
         )
         st.plotly_chart(fig_risco, use_container_width=True, config=PLOTLY_CFG)
-
-        # ── Tabela resumo ────────────────────
-        st.markdown('<div class="section-title">📋 Resumo por Submodalidade</div>',
-                    unsafe_allow_html=True)
-
-        df_resumo = (
-            df_filtrado
-            .groupby("submodalidade")
-            .agg(
-                Contratos   =("proposta",       "count"),
-                Valor_Total =("valor_contrato", "sum"),
-                Taxa_Media  =("taxa_juros",     "mean"),
-                Prazo_Medio =("prazo_meses",    "mean"),
-            )
-            .reset_index()
-            .sort_values("Valor_Total", ascending=False)
+        
+        st.markdown(
+            '<p class="chart-title" style="margin-top: 20px;">🏢 Cooperativas com Operações (Por Central)</p>',
+            unsafe_allow_html=True,
         )
-        df_resumo["Valor_Total"] = df_resumo["Valor_Total"].apply(fmt_moeda_full)
-        df_resumo["Taxa_Media"]  = df_resumo["Taxa_Media"].apply(lambda x: f"{x:.2f}%")
-        df_resumo["Prazo_Medio"] = df_resumo["Prazo_Medio"].apply(lambda x: f"{x:.0f} meses")
-        df_resumo.columns = ["Submodalidade","Contratos","Valor Total","Taxa Média","Prazo Médio"]
-        st.dataframe(df_resumo, use_container_width=True, hide_index=True)
+        st.dataframe(df_coop, use_container_width=True, hide_index=True)
 
     # ── Rodapé ───────────────────────────────
     st.markdown("""
     <div class="footer">
         Ferramenta de Precificação &nbsp;|&nbsp;
-        Desenvolvido com Streamlit &amp; Python &nbsp;|&nbsp;
-        Dados simulados para demonstração
+        Desenvolvido com Streamlit &amp; Python ;
     </div>
     """, unsafe_allow_html=True)
 
