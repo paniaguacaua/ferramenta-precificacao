@@ -789,8 +789,8 @@ def carregar_dados():
 
 def aplicar_filtros(
     df: pd.DataFrame,
-    central: str,
-    cooperativa: str,
+    central: list,
+    cooperativa: list,
     ano_mes_sel: list,
     mod_sel: list,
     submod_sel: list,
@@ -801,10 +801,10 @@ def aplicar_filtros(
 ) -> pd.DataFrame:
     """Aplica todos os filtros ao DataFrame."""
     dff = df.copy()
-    if central != "Todas":
-        dff = dff[dff["central"] == central]
-    if cooperativa != "Todas":
-        dff = dff[dff["cooperativa"] == cooperativa]
+    if central:
+        dff = dff[dff["central"].isin(central)]
+    if cooperativa:
+        dff = dff[dff["cooperativa"].isin(cooperativa)]
     if ano_mes_sel:
         dff = dff[dff["ano_mes"].isin(ano_mes_sel)]
     if mod_sel:
@@ -1216,6 +1216,23 @@ def tela_login():
     div[data-testid="stTextInput"] div[data-testid="InputInstructions"] {
         display: none !important;
     }
+    /* Estilização focada APENAS no botão de submissão do formulário */
+    div[data-testid="stFormSubmitButton"] button {
+        background: linear-gradient(90deg, #00AE9D 0%, #7DB61C 100%) !important;
+        border-radius: 50px !important;
+        color: #003641 !important;
+        font-weight: 700 !important;
+        border: none !important;
+        padding: 0.5rem 2rem !important;
+        transition: all 0.3s ease !important;
+        height: 45px !important;
+        width: 100% !important;
+    }
+    div[data-testid="stFormSubmitButton"] button:hover {
+        opacity: 0.9 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -1232,9 +1249,12 @@ def tela_login():
             text-align:center;
             box-shadow:0 24px 64px rgba(0,0,0,0.55);">
             <img src="{LOGO_B64}" style="height:110px;margin-bottom:18px;object-fit:contain;border-radius:20px;" alt="Sicoob" />
-            <div style="color:{COR_ESCURO};font-size:1rem;margin-bottom:0;
+            <div style="color:{COR_ESCURO};font-size:1.25rem;margin-bottom:0;font-weight:700;
                 font-family:{_PRIMARY_FONT};">
-                Ferramenta de Precificação &middot; Acesso Restrito</div>
+                Ferramenta de Precificação</div>
+            <div style="color:{COR_ESCURO};font-size:1rem;
+                font-family:{_PRIMARY_FONT};">
+                Acesso Restrito</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -1242,27 +1262,24 @@ def tela_login():
             f"<p style='color:{COR_LABEL};font-size:0.76rem;font-weight:700;"
             f"letter-spacing:0.1em;text-transform:uppercase;margin:20px 0 8px;"
             f"font-family:{_PRIMARY_FONT};'>"
-            f"🔒 Senha de acesso</p>",
+            f"🔒 SENHA DE ACESSO</p>",
             unsafe_allow_html=True,
         )
 
-        def _tentar_login():
-            if st.session_state.get("senha_input") == SENHA_CORRETA:
-                st.session_state["autenticado"] = True
-            else:
-                st.session_state["login_erro"] = True
+        with st.form("login_form", border=False):
+            senha = st.text_input(
+                "senha",
+                type="password",
+                placeholder="Digite a senha...",
+                label_visibility="collapsed",
+                key="senha_input",
+            )
 
-        senha = st.text_input(
-            "senha",
-            type="password",
-            placeholder="Digite a senha...",
-            label_visibility="collapsed",
-            key="senha_input",
-            on_change=_tentar_login,
-        )
-
-        entrar = st.button("Entrar →", use_container_width=True, key="btn_entrar",
-                           on_click=_tentar_login)
+            if st.form_submit_button("Entrar →", use_container_width=True):
+                if st.session_state.get("senha_input") == SENHA_CORRETA:
+                    st.session_state["autenticado"] = True
+                else:
+                    st.session_state["login_erro"] = True
 
         if st.session_state.get("autenticado"):
             st.rerun()
@@ -1300,23 +1317,25 @@ def main():
                     f"letter-spacing:0.06em;text-transform:uppercase;margin:0 0 8px;'>"
                     f"🏦 Central / Cooperativa</p>", unsafe_allow_html=True)
 
-        centrais    = ["Todas"] + sorted(df["central"].unique().tolist())
+        centrais    = sorted(df["central"].unique().tolist())
         st.markdown(f"<p style='color:{COR_MUTED};font-size:0.8rem;font-weight:100;"
                     f"letter-spacing:0.04em;margin:0 0 4px;'>CENTRAL</p>",
                     unsafe_allow_html=True)
-        central_sel = st.selectbox("Central", centrais,
-                                   label_visibility="collapsed", key="central")
+        central_sel = st.multiselect("Central", centrais,
+                                     placeholder="Todas",
+                                     label_visibility="collapsed", key="central")
 
-        if central_sel == "Todas":
-            coops = ["Todas"] + sorted(df["cooperativa"].unique().tolist())
+        if not central_sel:
+            coops = sorted(df["cooperativa"].unique().tolist())
         else:
-            coops = ["Todas"] + sorted(df[df["central"] == central_sel]["cooperativa"].unique().tolist())
+            coops = sorted(df[df["central"].isin(central_sel)]["cooperativa"].unique().tolist())
 
         st.markdown(f"<p style='color:{COR_MUTED};font-size:0.8rem;font-weight:100;"
                     f"letter-spacing:0.04em;margin:6px 0 4px;'>COOPERATIVA</p>",
                     unsafe_allow_html=True)
-        coop_sel = st.selectbox("Cooperativa", coops,
-                                label_visibility="collapsed", key="coop")
+        coop_sel = st.multiselect("Cooperativa", coops,
+                                  placeholder="Todas",
+                                  label_visibility="collapsed", key="coop")
 
         st.markdown('<div class="sb-divider"></div>', unsafe_allow_html=True)
 
@@ -1405,10 +1424,16 @@ def main():
 
     # ── Tags de filtros ativos ───────────────
     tags = []
-    if central_sel != "Todas":
-        tags.append(f"Central: <strong>{central_sel}</strong>")
-    if coop_sel != "Todas":
-        tags.append(f"Coop: <strong>{coop_sel}</strong>")
+    if central_sel:
+        if len(central_sel) == 1:
+            tags.append(f"Central: <strong>{central_sel[0]}</strong>")
+        else:
+            tags.append(f"Central: <strong>{len(central_sel)} selecionadas</strong>")
+    if coop_sel:
+        if len(coop_sel) == 1:
+            tags.append(f"Coop: <strong>{coop_sel[0]}</strong>")
+        else:
+            tags.append(f"Coop: <strong>{len(coop_sel)} selecionadas</strong>")
     if ano_mes_sel:
         tags.append(f"Período: <strong>{len(ano_mes_sel)} meses</strong>")
     if mod_sel:
