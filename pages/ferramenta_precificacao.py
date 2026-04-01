@@ -1771,7 +1771,7 @@ def main():
     <div class="footer">
         Ferramenta de Precificação &nbsp;|&nbsp;
         Desenvolvido com Streamlit &amp; Python &nbsp;|&nbsp;
-        Sicoob
+        Uso Interno
     </div>
     """, unsafe_allow_html=True)
 
