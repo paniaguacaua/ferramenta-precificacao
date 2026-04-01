@@ -1242,7 +1242,7 @@ def main():
     <div class="footer">
         Concessão BID &nbsp;|&nbsp;
         Desenvolvido com Streamlit &amp; Python &nbsp;|&nbsp;
-        Sicoob
+        Uso Interno
     </div>
     """, unsafe_allow_html=True)
 
