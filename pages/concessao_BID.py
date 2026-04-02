@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 
 st.set_page_config(
     page_title="Concessão BID",
-    page_icon="🌿",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -249,6 +248,10 @@ html, body, [class*="css"] {{
     line-height: 1.2;
 }}
 .main-header p {{ color: var(--muted); font-size: 0.92rem; margin: 8px 0 0; font-weight: 400; position: relative; z-index: 1; }}
+
+.main-header h1 a{{
+    display: none !important;
+}}
 
 /* ── SECTION TITLE ──────────────────────── */
 .section-title {{
@@ -943,7 +946,10 @@ def main():
     <div class="main-header">
         <img src="{LOGO_B64}" style="height:80px;object-fit:contain;background:#FFFFFF;border-radius:10px;padding:8px 14px;" alt="Sicoob" />
         <h1>Concessão BID</h1>
-        <p style="color: white; font-size: 0.9rem; margin-top: 5px; opacity: 0.9; font-weight: 600;">Data Base: {data_base_str}</p>
+        <p style="color: white; font-size: 1rem; margin-top: 5px; opacity: 1; font-weight: 600;">Data Base: {data_base_str}</p>
+        <p style="color: {COR_TEXTO}; font-size: 0.85rem; margin: 0; margin-top: 10px; line-height: 1.3;">
+            Painel atualizado semanalmente.
+        </p>
     </div>
     """, unsafe_allow_html=True)
 
