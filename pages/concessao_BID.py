@@ -1052,7 +1052,7 @@ def main():
         )
     with c2:
         st.metric(
-            label="Taxa Média (% a.m.)",
+            label="Média das Taxas (% a.m.)",
             value=f"{taxa_media:.2f}%",
             delta=f" - ",
         )
