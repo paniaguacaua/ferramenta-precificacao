@@ -744,11 +744,6 @@ def carregar_dados():
 
     return df
 
-    # Ano Mes para filtro
-    df["ano_mes"] = df["data_movimento"].dt.to_period("M").astype(str)
-
-    return df
-
 
 def aplicar_filtros(df, central_sel, coop_sel, tp_sel, ano_mes_sel, indexador_sel, categoria_linha_sel):
     dff = df.copy()
@@ -964,7 +959,11 @@ def main():
         categorias_credito = sorted(df["categoria_linha"].unique().tolist())
         
         if "bid_cat_linha_sel" not in st.session_state:
-            st.session_state["bid_cat_linha_sel"] = categorias_credito # Seleciona todas por padrão
+            # Define "LINHA ASSOCIADO" como pré-filtro padrão, se disponível
+            if "LINHA ASSOCIADO" in categorias_credito:
+                st.session_state["bid_cat_linha_sel"] = ["LINHA ASSOCIADO"]
+            else:
+                st.session_state["bid_cat_linha_sel"] = categorias_credito
             
         categoria_linha_sel = st.multiselect("Linha de Crédito", categorias_credito,
                                            placeholder="Todas",
