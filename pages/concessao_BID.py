@@ -336,7 +336,7 @@ div[data-testid="stButton"] button {{
 }}
 [data-testid="stMetricDelta"] svg {{ display: none; }}
 
-/* Oculta o "-" do card Taxa Média mantendo o espaço */
+/* Oculta o "-" do card Média das Taxas mantendo o espaço */
 [data-testid="stHorizontalBlock"] > div:nth-child(2) [data-testid="stMetricDelta"] {{
     visibility: hidden !important;
 }}
@@ -1089,15 +1089,15 @@ def main():
         df_central_disp = df_central.drop(columns=["central"]).rename(columns={
             "Valor_Contratado":"Valor Contratado (R$)",
             "Ticket_Medio":    "Ticket Médio (R$)",
-            "Taxa_Utilizada":  "Taxa Média (% a.m.)",
+            "Taxa_Utilizada":  "Média das Taxas (% a.m.)",
             "Qtd_Contratos":   "Qtd Contratos",
-        })[["Central", "Valor Contratado (R$)", "Ticket Médio (R$)", "Taxa Média (% a.m.)", "Qtd Contratos"]]
+        })[["Central", "Valor Contratado (R$)", "Ticket Médio (R$)", "Média das Taxas (% a.m.)", "Qtd Contratos"]]
 
         st.dataframe(
             df_central_disp.style.format({
                 "Valor Contratado (R$)": lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
                 "Ticket Médio (R$)":    lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
-                "Taxa Média (% a.m.)": "{:.2f}%",
+                "Média das Taxas (% a.m.)": "{:.2f}% ",
                 "Qtd Contratos": lambda x: f"{x:,.0f}".replace(",", "."),
             }),
             use_container_width=True,
