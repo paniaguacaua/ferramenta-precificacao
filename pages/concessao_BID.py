@@ -613,11 +613,11 @@ LOGO_B64 = "data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTE
 
 def fmt_moeda(v: float) -> str:
     if v >= 1_000_000_000:
-        return f"R$ {v/1_000_000_000:.2f} B".replace(".", ",")
+        return f"R$ {v/1_000_000_000:.2f} Bi".replace(".", ",")
     if v >= 1_000_000:
-        return f"R$ {v/1_000_000:.2f} M".replace(".", ",")
+        return f"R$ {v/1_000_000:.2f} Mi".replace(".", ",")
     if v >= 1_000:
-        return f"R$ {v/1_000:.1f} K".replace(".", ",")
+        return f"R$ {v/1_000:.1f} Mil".replace(".", ",")
     return f"R$ {v:.2f}".replace(".", ",")
 
 def fmt_moeda_full(v: float) -> str:
@@ -629,7 +629,7 @@ def fmt_abrev(v: float) -> str:
     if abs(v) >= 1_000_000:
         return f"{v/1_000_000:.2f} Mi".replace(".", ",")
     if abs(v) >= 1_000:
-        return f"{v/1_000:.2f} K".replace(".", ",")
+        return f"{v/1_000:.2f} Mil".replace(".", ",")
     return f"{v:.0f}"
 
 def gerar_tickvals(series, n_ticks=6):
@@ -641,12 +641,46 @@ def gerar_tickvals(series, n_ticks=6):
 
 @st.cache_data
 def carregar_dados():
+    # Função auxiliar para encontrar colunas de forma robusta
+    import unicodedata
+    def normalizar(txt):
+        if not isinstance(txt, str): return str(txt)
+        return "".join(c for c in unicodedata.normalize("NFD", txt) 
+                       if unicodedata.category(c) != "Mn").lower().replace(" ", "").strip()
+
+    def encontrar_e_renomear(df, mapeamento_padrao):
+        regras_renomear = {}
+        for nome_padrao, lista_possibilidades in mapeamento_padrao.items():
+            for possivel in lista_possibilidades:
+                alvo = normalizar(possivel)
+                for col in df.columns:
+                    if normalizar(col) == alvo:
+                        regras_renomear[col] = nome_padrao
+                        break
+                if nome_padrao in regras_renomear.values(): break
+        return df.rename(columns=regras_renomear)
+
+    # Definição das colunas que precisamos e suas variações de nomes nas planilhas
+    MAPA_COLUNAS = {
+        "Data Liberação Crédito": ["Data Liberação Crédito", "Data Liberao Crdito", "Data Movimento"],
+        "Número Central":         ["Número Central", "Nmero Central", "Número Central Local Negócio", "Nmero Central Local Negcio"],
+        "Número Cooperativa":     ["Número Cooperativa", "Nmero Cooperativa", "Número Cooperativa Local Negócio", "Nmero Cooperativa Local Negcio"],
+        "Sigla Cooperativa":      ["Sigla Cooperativa", "Sigla Cooperativa Local Negócio", "Sigla Cooperativa Local Negcio"],
+        "Sigla Tipo Pessoa":      ["Sigla Tipo Pessoa"],
+        "Valor Contrato":         ["Valor Contrato"],
+        "% Taxa Operação":        ["% Taxa Operação", "% Taxa Operao"],
+        "Número Contrato Crédito":["Número Contrato Crédito", "Nmero Contrato Crdito"],
+        "Número Proposta":        ["Número Proposta", "Nmero Proposta"],
+        "Índice Correção":        ["Índice Correção", "ndice Correo"],
+        "Linha Crédito":          ["Linha Crédito", "Linha Crdito"],
+    }
+
     dfs = []
     
     # 1. Base Principal BID
     try:
         df_bid = pd.read_excel(ARQUIVO_BID)
-        # Adicionar categoria para o grupo BID (Cooperados)
+        df_bid = encontrar_e_renomear(df_bid, MAPA_COLUNAS)
         df_bid["Categoria Linha"] = "LINHA ASSOCIADO"
         dfs.append(df_bid)
     except Exception as e:
@@ -656,25 +690,8 @@ def carregar_dados():
     try:
         if Path(ARQUIVO_GIRO).exists():
             df_giro = pd.read_excel(ARQUIVO_GIRO)
-            
-            # Mapeamento de colunas divergentes detectado na análise
-            mapeamento = {
-                "Data Movimento Entrada": "Data Movimento",
-                "Número Central Local Negócio": "Número Central",
-                "Número Cooperativa Local Negócio": "Número Cooperativa",
-                "Sigla Cooperativa Local Negócio": "Sigla Cooperativa",
-            }
-            df_giro = df_giro.rename(columns=mapeamento)
-            
-            # Inferência de Sigla Tipo Pessoa (ausente no Giro)
-            if "Sigla Tipo Pessoa" not in df_giro.columns and "Número CPF/CNPJ" in df_giro.columns:
-                df_giro["Sigla Tipo Pessoa"] = df_giro["Número CPF/CNPJ"].apply(
-                    lambda x: "PJ" if len(str(x).strip()) >= 12 else "PF"
-                )
-            
-            # Adicionar categoria para o grupo Giro (Cooperativa)
+            df_giro = encontrar_e_renomear(df_giro, MAPA_COLUNAS)
             df_giro["Categoria Linha"] = "LINHA COOPERATIVA / CENTRAL"
-            
             dfs.append(df_giro)
     except Exception as e:
         st.warning(f"Aviso ao carregar '{ARQUIVO_GIRO}': {e}")
@@ -684,10 +701,17 @@ def carregar_dados():
 
     df_raw = pd.concat(dfs, ignore_index=True)
 
+    # Verificação de colunas críticas após padronização
+    faltantes = [c for c in MAPA_COLUNAS.keys() if c not in df_raw.columns]
+    if faltantes:
+        st.error(f"Erro: Colunas essenciais não encontradas: {', '.join(faltantes)}")
+        st.write("Colunas detectadas após tentativa de padronização:", list(df_raw.columns))
+        return pd.DataFrame()
+
     df = pd.DataFrame()
 
-    # Datas
-    df["data_movimento"] = pd.to_datetime(df_raw["Data Movimento"], dayfirst=True, errors="coerce")
+    # Datas - Utilizando 'Data Liberação Crédito' como principal (normalizando para remover horário)
+    df["data_movimento"] = pd.to_datetime(df_raw["Data Liberação Crédito"], dayfirst=True, errors="coerce").dt.normalize()
 
     # Identificação
     df["central"]         = df_raw["Número Central"].astype(str).str.strip()
@@ -713,11 +737,12 @@ def carregar_dados():
 
     # Linha de crédito
     df["linha_credito"]   = df_raw["Linha Crédito"].astype(str).str.strip()
-    categoria_map = {
-        "CAPITAL DE GIRO · COOPERATIVA": "LINHA COOPERATIVA / CENTRAL",
-        "SICOOB VERDE · ASSOCIADO": "LINHA ASSOCIADO"
-    }
-    df["categoria_linha"] = df_raw["Categoria Linha"].astype(str).str.strip().replace(categoria_map)
+    df["categoria_linha"] = df_raw["Categoria Linha"].astype(str).str.strip()
+
+    # Ano Mes para filtro
+    df["ano_mes"] = df["data_movimento"].dt.to_period("M").astype(str)
+
+    return df
 
     # Ano Mes para filtro
     df["ano_mes"] = df["data_movimento"].dt.to_period("M").astype(str)
@@ -864,8 +889,9 @@ def main():
     
     # placeholder.empty()  <-- Removido para reutilizar o slot no header
 
+    placeholder.empty()
     if df.empty:
-        st.warning("Nenhum dado carregado. Verifique o arquivo concessao_BID.xlsx.")
+        st.warning("Nenhum dado carregado ou erro na leitura das colunas. Verifique as planilhas.")
         st.stop()
 
     # Mapa de siglas das centrais (usado nos filtros ativos e nas tabelas)
@@ -938,7 +964,7 @@ def main():
         categorias_credito = sorted(df["categoria_linha"].unique().tolist())
         
         if "bid_cat_linha_sel" not in st.session_state:
-            st.session_state["bid_cat_linha_sel"] = ["LINHA ASSOCIADO"] if "LINHA ASSOCIADO" in categorias_credito else []
+            st.session_state["bid_cat_linha_sel"] = categorias_credito # Seleciona todas por padrão
             
         categoria_linha_sel = st.multiselect("Linha de Crédito", categorias_credito,
                                            placeholder="Todas",

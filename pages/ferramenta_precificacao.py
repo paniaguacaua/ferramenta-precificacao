@@ -1242,7 +1242,7 @@ def _fmt_eixo(v: float) -> str:
     if av >= 1_000_000:
         return f"{v/1_000_000:.2f} Mi".replace(".", ",")
     if av >= 1_000:
-        return f"{v/1_000:.2f} K".replace(".", ",")
+        return f"{v/1_000:.2f} Mil".replace(".", ",")
     return f"{v:.0f}"
 
 
@@ -1259,11 +1259,11 @@ def _tickvals_labels(series: "pd.Series"):
 
 def fmt_moeda(v: float) -> str:
     if v >= 1_000_000_000:
-        return f"R$ {v/1_000_000_000:.2f} B".replace(".", ",")
+        return f"R$ {v/1_000_000_000:.2f} Bi".replace(".", ",")
     if v >= 1_000_000:
-        return f"R$ {v/1_000_000:.2f} M".replace(".", ",")
+        return f"R$ {v/1_000_000:.2f} Mi".replace(".", ",")
     if v >= 1_000:
-        return f"R$ {v/1_000:.1f} K".replace(".", ",")
+        return f"R$ {v/1_000:.1f} Mil".replace(".", ",")
     return f"R$ {v:.2f}".replace(".", ",")
 
 def fmt_moeda_full(v: float) -> str:
@@ -1277,7 +1277,7 @@ def fmt_abrev(v: float) -> str:
     if abs(v) >= 1_000_000:
         return f"{v/1_000_000:.2f} Mi"
     if abs(v) >= 1_000:
-        return f"{v/1_000:.2f} K"
+        return f"{v/1_000:.2f} Mil"
     return f"{v:.0f}"
 
 
@@ -1302,7 +1302,7 @@ def fmt_abrev(v: float) -> str:
     if abs(v) >= 1_000_000:
         return f"{v/1_000_000:.2f} Mi".replace(".", ",")
     if abs(v) >= 1_000:
-        return f"{v/1_000:.2f} K".replace(".", ",")
+        return f"{v/1_000:.2f} Mil".replace(".", ",")
     return f"{v:.0f}"
 
 def gerar_tickvals(series: "pd.Series", n_ticks: int = 6):
