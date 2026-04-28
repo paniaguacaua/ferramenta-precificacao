@@ -828,9 +828,6 @@ def carregar_dados():
         "CERTIFICADO DEPÓSITO INTERBANCÁRIO": "CDI",
         "TAXA SELIC": "SELIC",
     }, regex=False)
-
-    # REMOVER PÓS-FIXADOS (CDI e SELIC) conforme solicitado
-    df = df[~df["indexador"].isin(["CDI", "SELIC"])]
     
     df["seg_prestamista"] = df_raw["Possui Seguro Prestamista"].astype(str).str.upper().str.strip()
 
@@ -1021,6 +1018,7 @@ def gerar_graficos(df: pd.DataFrame, risco_sel: list, df_totais: pd.DataFrame):
                 line=dict(color=COR_BG, width=3),
             ),
             textinfo="percent",
+            texttemplate="%{percent:.2%}",
             textfont=dict(size=14, family="'Sicoob Sans','Nunito Sans',sans-serif", weight="bold"),
             textposition="outside",
             hovertemplate="<b>%{label}</b><br>R$ %{value:,.0f}<br>%{percent}<extra></extra>",
@@ -1129,6 +1127,7 @@ def gerar_graficos(df: pd.DataFrame, risco_sel: list, df_totais: pd.DataFrame):
                 line=dict(color=COR_BG, width=3),
             ),
             textinfo="percent",
+            texttemplate="%{percent:.2%}",
             textfont=dict(size=14, family="'Sicoob Sans','Nunito Sans',sans-serif", weight="bold"),
             textposition="outside",
             hovertemplate="<b>%{label}</b><br>R$ %{value:,.0f}<br>%{percent}<extra></extra>",
@@ -1171,6 +1170,7 @@ def gerar_graficos(df: pd.DataFrame, risco_sel: list, df_totais: pd.DataFrame):
                 line=dict(color=COR_BG, width=3),
             ),
             textinfo="percent",
+            texttemplate="%{percent:.2%}",
             textfont=dict(size=14, family="'Sicoob Sans','Nunito Sans',sans-serif", weight="bold"),
             textposition="outside",
             hovertemplate="<b>%{label}</b><br>R$ %{value:,.0f}<br>%{percent}<extra></extra>",
@@ -1219,7 +1219,7 @@ def gerar_graficos(df: pd.DataFrame, risco_sel: list, df_totais: pd.DataFrame):
                 total = int(row["total_coops"])
                 if total > 0:
                     pct = (operando / total) * 100
-                    return f"{operando} ({pct:.0f}%)"
+                    return f"{operando}/{total} ({pct:.0f}%)"
                 return f"{operando}"
             
             res["Qtd Cooperativas"] = res.apply(fmt_participacao, axis=1)
